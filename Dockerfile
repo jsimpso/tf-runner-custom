@@ -25,12 +25,13 @@ RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr
 
 COPY entrypoint.sh providers.tf /
 
+RUN mkdir -p .local/share/juju/
+RUN mkdir -p /home/runner/.local/share/juju/
+
 RUN terraform providers mirror /opt/providers && rm -f providers.tf
 
 # Switch back to the non-root user after operations
 USER 65532:65532
-
-RUN mkdir -p /home/runner/.local/share/juju/
 
 ENTRYPOINT ["/entrypoint.sh"]
 
