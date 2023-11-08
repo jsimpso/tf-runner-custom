@@ -8,5 +8,7 @@ provider_installation {
   }
 }' > ~/.terraformrc
 
+mkdir -p ~/.local/share/juju
+
 exec /sbin/tini -- tf-runner "$@"
 
