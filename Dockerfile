@@ -19,9 +19,16 @@ RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/
     chmod +x /usr/local/bin/terraform
 
 ADD https://launchpad.net/juju/${JUJU_SERIES}/${JUJU_SERIES}.${JUJU_PATCH}/+download/juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz /juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz
-RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz && \
-    install -o root -g root -m 0755 juju /usr/local/bin/juju && \
+
+RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr/local/bin && chmod +x /usr/local/bin/juju && \
     rm /juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz
+
+COPY entrypoint.sh providers.tf /
+
+RUN terraform providers mirror /opt/providers && rm -f providers.tf
 
 # Switch back to the non-root user after operations
 USER 65532:65532
+
+ENTRYPOINT ["/entrypoint.sh"]
+
