@@ -30,5 +30,7 @@ RUN terraform providers mirror /opt/providers && rm -f providers.tf
 # Switch back to the non-root user after operations
 USER 65532:65532
 
+RUN mkdir -p ~/.local/share/juju/
+
 ENTRYPOINT ["/entrypoint.sh"]
 
