@@ -8,10 +8,12 @@ ARG JUJU_SERIES=3.1
 ARG JUJU_PATCH=6
 ARG TARGETARCH=amd64
 
-
-
 # Switch to root to have permissions for operations
 USER root
+
+# Install python3 and python-ldap
+RUN apk add gcc musl-dev python3-dev openldap-dev py3-pip
+RUN pip install python-ldap
 
 ADD https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TARGETARCH}.zip /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip
 RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/ && \
