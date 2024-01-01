@@ -1,8 +1,8 @@
 FROM ubuntu
 LABEL org.opencontainers.image.source="https://github.com/weaveworks/tf-controller"
 
-ARG BASE_IMAGE=ghcr.io/weaveworks/tf-runner
-ARG TF_CONTROLLER_VERSION=v0.16.0-rc.3
+ARG base_image=ghcr.io/weaveworks/tf-runner
+ARG tf_controller_version=v0.16.0-rc.3
 
 ARG TF_VERSION=1.5.7
 ARG BW_VERSION=2023.12.1
@@ -29,7 +29,7 @@ RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
     chmod +x /usr/local/bin/bw
 
-COPY --from="${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base" /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
+COPY --from="${base_image}:${tf_controller_version}-base" /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
 
 
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
