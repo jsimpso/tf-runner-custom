@@ -15,7 +15,7 @@ RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/
     rm /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip && \
     chmod +x /usr/local/bin/terraform
 
-ADD https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-linux-${BW_VERSION}.zip
+ADD https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-linux-${BW_VERSION}.zip /bw-linux-${BW_VERSION}.zip
 
 RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
