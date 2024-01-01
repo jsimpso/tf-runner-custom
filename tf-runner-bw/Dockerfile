@@ -1,14 +1,22 @@
+FROM ubuntu
+LABEL org.opencontainers.image.source="https://github.com/weaveworks/tf-controller"
+
 ARG BASE_IMAGE=ghcr.io/weaveworks/tf-runner
 ARG TF_CONTROLLER_VERSION=v0.16.0-rc.3
-
-FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base
 
 ARG TF_VERSION=1.5.7
 ARG BW_VERSION=2023.12.1
 ARG TARGETARCH=amd64
 
-# Switch to root to have permissions for operations
-USER root
+RUN apt-get update -y \
+  && apt-get install -y \
+    ca-certificates \
+    git \
+    gnupg \
+    libssl-dev \
+    openssh-client \
+    tini \
+    unzip
 
 ADD https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TARGETARCH}.zip /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip
 RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/ && \
@@ -21,12 +29,14 @@ RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
     chmod +x /usr/local/bin/bw
 
-RUN apk add --no-cache libstdc++ libgcc gcompat musl-dev
+COPY --from=${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
 
-COPY entrypoint.sh /
 
-# Switch back to the non-root user after operations
+RUN echo 'hosts: files dns' > /etc/nsswitch.conf
+RUN addgroup --gid 65532 --system runner \
+  && adduser --uid 65532 --system runner --group
+
 USER 65532:65532
+ENV GNUPGHOME=/tmp
 
-ENTRYPOINT ["/entrypoint.sh"]
-
+ENTRYPOINT [ "/bin/tini", "--", "tf-runner" ]
