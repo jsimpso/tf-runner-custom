@@ -29,7 +29,7 @@ RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
     chmod +x /usr/local/bin/bw
 
-COPY --from=${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
+COPY --from="${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base" /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
 
 
 RUN echo 'hosts: files dns' > /etc/nsswitch.conf
