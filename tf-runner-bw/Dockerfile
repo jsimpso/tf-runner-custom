@@ -21,7 +21,7 @@ RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
     chmod +x /usr/local/bin/bw
 
-RUN apk add --no-cache libstdc++ libgcc gcompat
+RUN apk add --no-cache libstdc++ libgcc gcompat musl
 
 COPY entrypoint.sh /
 
