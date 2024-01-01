@@ -21,6 +21,8 @@ RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
     rm /bw-linux-${BW_VERSION}.zip && \
     chmod +x /usr/local/bin/bw
 
+RUN apk add --no-cache libstdc++ libgcc gcompat
+
 COPY entrypoint.sh /
 
 # Switch back to the non-root user after operations
