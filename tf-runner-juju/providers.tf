@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.6.6"
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
@@ -24,6 +24,10 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5.1"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0.5"
     }
   }
 }
