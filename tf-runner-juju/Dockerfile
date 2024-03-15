@@ -1,5 +1,5 @@
-ARG BASE_IMAGE=ghcr.io/weaveworks/tf-runner
-ARG TF_CONTROLLER_VERSION=v0.16.0-rc.3
+ARG BASE_IMAGE=ghcr.io/flux-iac/tf-runner
+ARG TF_CONTROLLER_VERSION=v0.16.0-rc.4
 
 FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base
 
