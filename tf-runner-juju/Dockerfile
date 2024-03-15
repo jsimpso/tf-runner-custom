@@ -12,8 +12,7 @@ ARG TARGETARCH=amd64
 USER root
 
 # Install python3 and python-ldap
-RUN apk add gcc musl-dev python3-dev openldap-dev py3-pip
-RUN pip install python-ldap
+RUN apk add gcc musl-dev python3-dev openldap-dev py3-pip py3-ldap
 
 ADD https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TARGETARCH}.zip /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip
 RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/ && \
