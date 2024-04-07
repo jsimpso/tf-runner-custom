@@ -17,6 +17,8 @@ RUN apt-get update -y \
     ca-certificates \
     python3-boto3 \
     python3-ldap \
+    libldap2-dev \
+    libsasl2-dev \
     git \
     libssl-dev \
     openssh-client \
