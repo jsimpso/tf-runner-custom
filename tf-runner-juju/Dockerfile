@@ -24,12 +24,15 @@ ADD https://launchpad.net/juju/${JUJU_SERIES}/${JUJU_SERIES}.${JUJU_PATCH}/+down
 RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr/local/bin && chmod +x /usr/local/bin/juju && \
     rm /juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz
 
-COPY entrypoint.sh providers.tf /
+COPY providers.tf /
 
-RUN terraform providers mirror /usr/local/share/terraform/plugins && rm -f providers.tf
+ENV TF_PLUGIN_CACHE_DIR="/usr/local/share/terraform/plugin-cache/"
+RUN mkdir -p $TF_PLUGIN_CACHE_DIR
+RUN terraform init && rm -rf .terraform && rm -f providers.tf
+RUN chown runner:runner -R $TF_PLUGIN_CACHE_DIR
 
 # Switch back to the non-root user after operations
-USER 65532:65532
+USER runner:runner
 
-ENTRYPOINT ["/entrypoint.sh"]
-
+RUN mkdir -p /home/runner/.local/share/juju
+ENTRYPOINT [ "/sbin/tini", "--", "tf-runner" ]
