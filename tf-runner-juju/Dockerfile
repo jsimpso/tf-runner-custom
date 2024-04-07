@@ -27,6 +27,8 @@ RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr
 # Switch back to the non-root user after operations
 USER runner:runner
 
+RUN mkdir -p /home/runner/temp
+COPY providers.tf /home/runner/temp
 ENV TF_PLUGIN_CACHE_DIR="/home/runner/.terraform.d/plugin-cache/"
 RUN mkdir -p $TF_PLUGIN_CACHE_DIR
 WORKDIR /home/runner/temp
