@@ -6,6 +6,7 @@ FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base as runner-base
 FROM ubuntu
 LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
 
+ENV DEBIAN_FRONTEND=noninteractive
 ARG TF_VERSION=1.7.1
 ARG JUJU_SERIES=3.1
 ARG JUJU_PATCH=7
@@ -14,12 +15,14 @@ ARG TARGETARCH=amd64
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y \
     ca-certificates \
+    python3-boto3 \
     python3-ldap \
     git \
     libssl-dev \
     openssh-client \
     tini \
     xz-utils \
+    vim \
     unzip
 
 ADD https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TARGETARCH}.zip /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip
@@ -32,14 +35,21 @@ ADD https://launchpad.net/juju/${JUJU_SERIES}/${JUJU_SERIES}.${JUJU_PATCH}/+down
 RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr/local/bin && chmod +x /usr/local/bin/juju && \
     rm /juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz
 
-COPY entrypoint.sh providers.tf /
-
 COPY --from=runner-base /usr/local/bin/tf-runner /usr/local/bin/tf-runner
 
-RUN terraform providers mirror /usr/local/share/terraform/plugins && rm -f providers.tf
+RUN addgroup --gid 65532 --system runner \
+    && adduser --uid 65532 --system runner --group
+USER runner:runner
 
-# Switch back to the non-root user after operations
-USER 65532:65532
+RUN mkdir -p /home/runner/temp
+COPY providers.tf /home/runner/temp
+ENV TF_PLUGIN_CACHE_DIR="/home/runner/.terraform.d/plugin-cache/"
+RUN mkdir -p $TF_PLUGIN_CACHE_DIR
+WORKDIR /home/runner/temp
+RUN terraform init
+WORKDIR /home/runner
+RUN rm -rf /home/runner/temp
 
-ENTRYPOINT ["/entrypoint.sh"]
+RUN mkdir -p /home/runner/.local/share/juju
 
+ENTRYPOINT [ "/bin/tini", "--", "tf-runner" ]
