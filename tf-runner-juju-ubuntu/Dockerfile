@@ -19,6 +19,7 @@ RUN apt-get update -y \
     python3-ldap \
     libldap2-dev \
     libsasl2-dev \
+    libldap-common \
     git \
     libssl-dev \
     openssh-client \
