@@ -15,6 +15,7 @@ RUN apt-get update -y \
     ca-certificates \
     python3-boto3 \
     python3-ldap \
+    python3-launchpadlib \
     libldap2-dev \
     libsasl2-dev \
     libldap-common \
