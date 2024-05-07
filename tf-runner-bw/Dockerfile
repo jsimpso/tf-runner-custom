@@ -6,7 +6,7 @@ FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base as runner-base
 FROM ubuntu
 LABEL org.opencontainers.image.source="https://github.com/weaveworks/tf-controller"
 
-ARG TF_VERSION=1.5.7
+ARG TF_VERSION=1.8.2
 ARG BW_VERSION=2023.12.1
 ARG TARGETARCH=amd64
 
