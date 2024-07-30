@@ -6,30 +6,30 @@ FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base as runner-base
 FROM ubuntu
 LABEL org.opencontainers.image.source="https://github.com/weaveworks/tf-controller"
 
-ARG TF_VERSION=1.8.2
+ARG TF_VERSION=1.9.3
 ARG BW_VERSION=2023.12.1
 ARG TARGETARCH=amd64
 
 RUN apt-get update -y \
   && apt-get install -y \
-    ca-certificates \
-    git \
-    gnupg \
-    libssl-dev \
-    openssh-client \
-    tini \
-    unzip
+  ca-certificates \
+  git \
+  gnupg \
+  libssl-dev \
+  openssh-client \
+  tini \
+  unzip
 
 ADD https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${TARGETARCH}.zip /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip
 RUN unzip -q /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip -d /usr/local/bin/ && \
-    rm /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip && \
-    chmod +x /usr/local/bin/terraform
+  rm /terraform_${TF_VERSION}_linux_${TARGETARCH}.zip && \
+  chmod +x /usr/local/bin/terraform
 
 ADD https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-linux-${BW_VERSION}.zip /bw-linux-${BW_VERSION}.zip
 
 RUN unzip -q /bw-linux-${BW_VERSION}.zip -d /usr/local/bin/ && \
-    rm /bw-linux-${BW_VERSION}.zip && \
-    chmod +x /usr/local/bin/bw
+  rm /bw-linux-${BW_VERSION}.zip && \
+  chmod +x /usr/local/bin/bw
 
 COPY --from=runner-base /usr/local/bin/tf-runner /usr/local/bin/tf-runner 
 
