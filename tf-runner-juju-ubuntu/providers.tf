@@ -3,23 +3,23 @@ terraform {
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "~> 1.54.0"
+      version = "~> 2.1.0"
     }
     vault = {
       source  = "hashicorp/vault"
-      version = "~> 4.2.0"
+      version = "~> 4.4.0"
     }
     ldap = {
       source  = "elastic-infra/ldap"
-      version = "~> 2.0"
+      version = "~> 2.0.1"
     }
     juju = {
       source  = "juju/juju"
-      version = "~> 0.10.1"
+      version = "~> 0.13.0"
     }
     time = {
       source  = "hashicorp/time"
-      version = "~> 0.11.0"
+      version = "~> 0.12.0"
     }
     random = {
       source  = "hashicorp/random"

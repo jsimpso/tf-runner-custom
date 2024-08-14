@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: jsimpso/tf-runner-juju-ubuntu
+  IMAGE_NAME: jsimpso/tf-runner-juju-ubuntu:1.9.3
 
 jobs:
   build-and-push-image:
