@@ -3,9 +3,11 @@ ARG TF_CONTROLLER_VERSION=v0.16.0-rc.4
 
 FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base
 
-ARG TF_VERSION=1.9.3
-ARG JUJU_SERIES=3.1
-ARG JUJU_PATCH=6
+LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
+
+ARG TF_VERSION=1.9.5
+ARG JUJU_SERIES=3.5
+ARG JUJU_PATCH=3
 ARG TARGETARCH=amd64
 
 # Switch to root to have permissions for operations

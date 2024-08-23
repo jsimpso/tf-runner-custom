@@ -1,12 +1,12 @@
-ARG BASE_IMAGE=ghcr.io/weaveworks/tf-runner
-ARG TF_CONTROLLER_VERSION=v0.16.0-rc.3
+ARG BASE_IMAGE=ghcr.io/flux-iac/tf-runner
+ARG TF_CONTROLLER_VERSION=v0.16.0-rc.4
 
 FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base as runner-base
 
 FROM ubuntu
-LABEL org.opencontainers.image.source="https://github.com/weaveworks/tf-controller"
+LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
 
-ARG TF_VERSION=1.9.3
+ARG TF_VERSION=1.9.5
 ARG BW_VERSION=2023.12.1
 ARG TARGETARCH=amd64
 
