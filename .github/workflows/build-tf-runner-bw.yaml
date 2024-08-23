@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: jsimpso/tf-runner-bw:latest
+  IMAGE_NAME: jsimpso/tf-runner-bw
 
 jobs:
   build-and-push-image:
@@ -33,6 +33,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=tf-1.9.5
+          flavor: |
+            latest=true
       - name: Build and push Docker image
         uses: docker/build-push-action@v5.1.0
         with:
