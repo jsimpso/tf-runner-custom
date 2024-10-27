@@ -15,7 +15,7 @@ terraform {
     }
     juju = {
       source  = "juju/juju"
-      version = "~> 0.13.0"
+      version = "~> 0.15.0"
     }
     time = {
       source  = "hashicorp/time"

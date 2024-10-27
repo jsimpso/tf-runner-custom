@@ -15,6 +15,7 @@ ARG TARGETARCH=amd64
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y \
     ca-certificates \
+    curl \
     python3-boto3 \
     python3-ldap \
     libldap2-dev \
