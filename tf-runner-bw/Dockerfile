@@ -6,7 +6,7 @@ FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base as runner-base
 FROM ubuntu
 LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
 
-ARG TF_VERSION=1.9.5
+ARG TF_VERSION=1.11.1
 ARG BW_VERSION=2023.12.1
 ARG TARGETARCH=amd64
 

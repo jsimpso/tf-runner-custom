@@ -33,7 +33,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=tf-1.9.5
+            type=raw,value=tf-1.11.1
           flavor: |
             latest=true
       - name: Build and push Docker image
