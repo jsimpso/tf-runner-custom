@@ -7,7 +7,7 @@ FROM docker.io/library/ubuntu:24.04
 LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG TF_VERSION=1.11.1
+ARG TF_VERSION=1.12.2
 ARG TARGETARCH=amd64
 
 RUN apt-get update -y \
