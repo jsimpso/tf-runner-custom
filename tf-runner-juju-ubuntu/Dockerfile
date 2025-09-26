@@ -18,6 +18,7 @@ RUN apt-get update -y \
     curl \
     python3-boto3 \
     python3-ldap \
+    python3-hvac \
     libldap2-dev \
     libsasl2-dev \
     libldap-common \
