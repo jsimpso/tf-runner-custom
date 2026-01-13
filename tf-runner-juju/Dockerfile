@@ -5,7 +5,7 @@ FROM ${BASE_IMAGE}:${TF_CONTROLLER_VERSION}-base
 
 LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controller"
 
-ARG TF_VERSION=1.12.2
+ARG TF_VERSION=1.14.3
 ARG JUJU_SERIES=3.5
 ARG JUJU_PATCH=3
 ARG TARGETARCH=amd64
