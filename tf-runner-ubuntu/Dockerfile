@@ -18,6 +18,7 @@ RUN apt-get update -y \
     python3-ldap \
     python3-launchpadlib \
     python3-hvac \
+    python3-openstackclients \
     libldap2-dev \
     libsasl2-dev \
     libldap-common \
