@@ -19,7 +19,7 @@ RUN apt-get update -y \
     python3-boto3 \
     python3-ldap \
     python3-hvac \
-    python3-openstackclients \
+    python3-openstackclient \
     libldap2-dev \
     libsasl2-dev \
     libldap-common \
