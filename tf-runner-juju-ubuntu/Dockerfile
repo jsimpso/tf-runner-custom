@@ -44,6 +44,13 @@ RUN tar -xf juju-${JUJU_SERIES}.${JUJU_PATCH}-linux-${TARGETARCH}.tar.xz -C /usr
 
 COPY --from=runner-base /usr/local/bin/tf-runner /usr/local/bin/tf-runner
 
+# Trust the in-cluster hermitcrab Terraform/OpenTofu provider network mirror's
+# CA, so tf-runner can reach it over HTTPS (the network mirror protocol
+# requires TLS, with no way to skip verification). Public CA cert only, not
+# secret.
+COPY hermitcrab-mirror-ca.crt /usr/local/share/ca-certificates/hermitcrab-mirror-ca.crt
+RUN update-ca-certificates
+
 RUN addgroup --gid 65532 --system runner \
     && adduser --uid 65532 --system runner --group --home /home/runner
 
