@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controll
 ENV DEBIAN_FRONTEND=noninteractive
 ARG TF_VERSION=1.15.5
 ARG JUJU_SERIES=3.6
-ARG JUJU_PATCH=23
+ARG JUJU_PATCH=27
 ARG TARGETARCH=amd64
 
 RUN apt-get update -y \
