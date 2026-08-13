@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.source="https://github.com/flux-iac/tofu-controll
 
 ARG TF_VERSION=1.15.5
 ARG JUJU_SERIES=3.6
-ARG JUJU_PATCH=23
+ARG JUJU_PATCH=27
 ARG TARGETARCH=amd64
 
 # Switch to root to have permissions for operations
