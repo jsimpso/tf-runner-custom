@@ -56,14 +56,8 @@ RUN addgroup --gid 65532 --system runner \
 
 USER runner:runner
 
-RUN mkdir /home/runner/temp
-COPY providers.tf /home/runner/temp
 ENV TF_PLUGIN_CACHE_DIR="/home/runner/.terraform.d/plugin-cache/"
 RUN mkdir -p $TF_PLUGIN_CACHE_DIR
-WORKDIR /home/runner/temp
-RUN terraform init
-WORKDIR /home/runner
-RUN rm -rf /home/runner/temp
 
 RUN mkdir -p /home/runner/.local/share/juju
 
