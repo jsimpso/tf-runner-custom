@@ -7,7 +7,7 @@ mkdir -p "$prime/etc/ssl/certs" "$prime/etc" "$prime/home/runner"
 # when assembling a bare filesystem from unpacked runtime DEBs.
 ln -sf dash "$prime/usr/bin/sh"
 # Python's versioned slice does not supply the unversioned CLI alias.
-ln -sf python3.12 "$prime/usr/bin/python3"
+ln -sf python3.14 "$prime/usr/bin/python3"
 # libldap2_libs does not include libldap-common's configuration. Preserve the
 # Ubuntu baseline's default TLS trust store for native LDAP clients as well.
 mkdir -p "$prime/etc/ldap"
@@ -31,7 +31,7 @@ if mirror not in public:
     bundle.write_bytes(public.rstrip(b"\n") + b"\n" + mirror)
 # PyPI certifi normally brings its own CA store. Use Ubuntu's augmented store
 # for requests, botocore and httplib2, as Ubuntu's certifi DEB did in the baseline.
-certifi = root / "usr/local/lib/python3.12/dist-packages/certifi/cacert.pem"
+certifi = root / "usr/local/lib/python3.14/dist-packages/certifi/cacert.pem"
 certifi.unlink(missing_ok=True)
 certifi.symlink_to("/etc/ssl/certs/ca-certificates.crt")
 # Keep RECORD accurate for the deliberately substituted CA store rather than

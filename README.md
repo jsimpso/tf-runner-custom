@@ -9,8 +9,8 @@ Two amd64 recipes are provided:
 
 | Project | Terraform | Juju | Additional Python client |
 | --- | --- | --- | --- |
-| `rocks/tf-runner-ubuntu` | 1.15.5 | No | Launchpad |
-| `rocks/tf-runner-juju-ubuntu` | 1.15.5 | 3.6.27 | — |
+| `rocks/tf-runner-ubuntu` | 1.17.2 | No | Launchpad |
+| `rocks/tf-runner-juju-ubuntu` | 1.17.2 | 3.6.29 | — |
 
 Both include boto3, python-ldap, hvac, OpenStack clients, Git, SSH, curl, jq and
 shell utilities used by infrastructure modules. Build-only tools and development
@@ -21,8 +21,8 @@ archive, so rebuilding may produce a different digest even without a version bum
 
 ### Chiselled runtime and locked Python clients
 
-The `runtime` part uses only official Ubuntu 24.04 Chisel slices on `base: bare`.
-It includes the shell/network tools, Git's separate HTTPS helper, Python 3.12
+The `runtime` part uses only official Ubuntu 26.04 Chisel slices on `base: bare`.
+It includes the shell/network tools, Git's separate HTTPS helper, Python 3.14
 standard library and native LDAP/SASL libraries. `base-files_chisel` explicitly
 requests a Chisel manifest under `/var/lib/chisel`; the smoke suite checks that
 the manifest is retained. Scanner support for this inventory varies by tool.
@@ -34,7 +34,7 @@ the chiselled git binary. They are not in the Chisel manifest.
 
 The third-party Python clients do not have upstream Noble slices. They are
 installed separately from hash-locked PyPI artifacts under
-`/usr/local/lib/python3.12/dist-packages`, retaining distribution metadata and
+`/usr/local/lib/python3.14/dist-packages`, retaining distribution metadata and
 licenses. `python-ldap` is compiled against Ubuntu libraries in the build
 environment only. Console-script shebangs use the sliced interpreter, not the
 temporary build venv. This is a **chiselled Ubuntu runtime plus Python application
@@ -57,11 +57,12 @@ enforces hashes with build isolation disabled. Do not strip `.dist-info/RECORD`
 or other inventory metadata to save space.
 
 The earlier bare-DEB baseline was approximately 187 MiB (Ubuntu) / 233 MiB
-(Juju) uncompressed. Its version was `1.15.5-1`; the chiselled candidate is
-`1.15.5-2`. Compare inventories, sizes and compatibility before promotion.
+(Juju) uncompressed. Its version was `1.15.5-1`; the first chiselled candidate
+was `1.15.5-2` on Ubuntu 24.04, and the current one is `1.17.2-1` on 26.04.
+Compare inventories, sizes and compatibility before promotion.
 The runner needs shell execution; a shell-free image would not be compatible.
 
-Local validation with Rockcraft 1.21.2 (amd64, 2026-11-07):
+Local validation of the Ubuntu 24.04 candidate with Rockcraft 1.21.2 (amd64, 2026-11-07):
 
 | Variant | Bare-DEB baseline | Chiselled candidate | Reduction |
 | --- | ---: | ---: | ---: |
@@ -110,7 +111,7 @@ without it only the recipe directory is visible. Run from each project directory
 cd rocks/tf-runner-ubuntu
 ROCKCRAFT_EXPERIMENTAL_MONOREPO=1 rockcraft pack
 sudo rockcraft.skopeo --insecure-policy copy \
-  oci-archive:tf-runner-ubuntu-rock_1.15.5-2_amd64.rock \
+  oci-archive:tf-runner-ubuntu-rock_1.17.2-1_amd64.rock \
   docker-daemon:tf-runner-ubuntu-rock:test
 cd ../..
 bash scripts/smoke-test-rock.sh tf-runner-ubuntu-rock:test ubuntu
@@ -172,10 +173,10 @@ read-only Actions token. Publishing jobs do not check out or execute source code
 from the selected build; they only copy the saved OCI archives into GHCR.
 
 Both variants receive a readable tag such as
-`tf-1.15.5_runner-0.16.3_u24.04_r2`, plus the existing `sha-<source-commit>` tag.
+`tf-1.17.2_runner-0.16.3_u26.04_r1`, plus the existing `sha-<source-commit>` tag.
 Terraform and runner versions come from `rocks/versions.env` at the selected
-build's SHA; Ubuntu comes from the recipe's build-base and `r2` from its
-`version: 1.15.5-2`. No Juju version is included. Historical builds without
+build's SHA; Ubuntu comes from the recipe's build-base and `r1` from its
+`version: 1.17.2-1`. No Juju version is included. Historical builds without
 `RUNNER_VERSION` are supported only for the explicitly verified legacy runner
 digest, not inferred from current main. Archive version labels must match the
 selected recipe. The publisher checks both tags before copying and refuses to
@@ -193,8 +194,8 @@ against the same source run to complete the pair.
 
 Candidate packages are published to:
 
-* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:tf-1.15.5_runner-0.16.3_u24.04_r2`
-* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:tf-1.15.5_runner-0.16.3_u24.04_r2`
+* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:tf-1.17.2_runner-0.16.3_u26.04_r1`
+* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:tf-1.17.2_runner-0.16.3_u26.04_r1`
 
 Today the owner is `jsimpso`; repository transfer to Canonical is deferred until
 the images are proven. The workflow prints each manifest digest for downstream

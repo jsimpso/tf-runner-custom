@@ -19,12 +19,12 @@ class RockContracts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)
             for relative in ("usr/bin", "etc/ssl/certs", "usr/local/share/ca-certificates",
-                             "usr/local/lib/python3.12/dist-packages/certifi", "tools"):
+                             "usr/local/lib/python3.14/dist-packages/certifi", "tools"):
                 (root / relative).mkdir(parents=True)
             bundle = root / "etc/ssl/certs/ca-certificates.crt"
             bundle.write_text("public certificate\n")
             (root / "usr/local/share/ca-certificates/hermitcrab-mirror-ca.crt").write_text("mirror certificate\n")
-            certifi = root / "usr/local/lib/python3.12/dist-packages/certifi/cacert.pem"
+            certifi = root / "usr/local/lib/python3.14/dist-packages/certifi/cacert.pem"
             certifi.write_text("PyPI certificates\n")
             record = certifi.parent.parent / "certifi-1.dist-info/RECORD"
             record.parent.mkdir()
@@ -39,7 +39,7 @@ class RockContracts(unittest.TestCase):
             self.assertEqual(bundle.read_text(), "public certificate\nmirror certificate\n")
             self.assertEqual(os.readlink(certifi), "/etc/ssl/certs/ca-certificates.crt")
             self.assertRegex(record.read_text(), r"certifi/cacert.pem,sha256=[\w-]+,38")
-            self.assertEqual(os.readlink(root / "usr/bin/python3"), "python3.12")
+            self.assertEqual(os.readlink(root / "usr/bin/python3"), "python3.14")
             self.assertEqual((root / "etc/ldap/ldap.conf").read_text(),
                              "TLS_CACERT /etc/ssl/certs/ca-certificates.crt\n")
             self.assertEqual((root / "etc/passwd").read_text().count("runner:x:"), 1)
@@ -147,7 +147,7 @@ class RockContracts(unittest.TestCase):
             with self.subTest(project=name):
                 project = yaml.safe_load((ROOT / "rocks" / name / "rockcraft.yaml").read_text())
                 self.assertEqual(project["base"], "bare")
-                self.assertEqual(project["build-base"], "ubuntu@24.04")
+                self.assertEqual(project["build-base"], "ubuntu@26.04")
                 self.assertEqual(project["platforms"], {"amd64": None})
                 self.assertEqual(project["run-user"], "_daemon_")
                 self.assertNotIn("entrypoint-command", project)
@@ -160,12 +160,29 @@ class RockContracts(unittest.TestCase):
                 packages = project["parts"]["runtime"]["stage-packages"]
                 self.assertTrue(all("_" in package for package in packages))
                 for required in ("base-files_chisel", "bash_bins", "dash_bins", "git_http-support",
-                                 "openssh-client_config", "python3.12_standard", "libldap2_libs"):
+                                 "openssh-client_config", "python3.14_standard", "libldap2_libs"):
                     self.assertIn(required, packages)
                 python_part = project["parts"]["python-clients"]
                 self.assertNotIn("stage-packages", python_part)
                 self.assertIn("libldap2-dev", python_part["build-packages"])
                 self.assertEqual(set(project["parts"]["runner"]["after"]), {"runtime", "python-clients"})
+
+    def test_python_version_matches_the_sliced_interpreter(self):
+        # The Ubuntu base decides the interpreter; scripts and locks must follow it.
+        versions = set()
+        for project in (ROOT / "rocks").glob("*/rockcraft.yaml"):
+            packages = yaml.safe_load(project.read_text())["parts"]["runtime"]["stage-packages"]
+            versions |= {re.fullmatch(r"python(3\.\d+)_standard", package)[1]
+                         for package in packages if re.fullmatch(r"python3\.\d+_standard", package)}
+        self.assertEqual(len(versions), 1, versions)
+        (version,) = versions
+        for script in ("scripts/stage-python.sh", "scripts/prime-runner.sh"):
+            found = set(re.findall(r"python(3\.\d+)", (ROOT / script).read_text()))
+            self.assertEqual(found, {version}, script)
+        self.assertIn(f"--python-version {version} ", (ROOT / "scripts/lock-python.sh").read_text())
+        for lock in ("common", "ubuntu", "build"):
+            header = (ROOT / "rocks/python" / (lock + ".txt")).read_text().splitlines()[1]
+            self.assertIn(f"--python-version {version} ", header, lock)
 
     def test_candidate_publication_is_opt_in(self):
         workflow = yaml.safe_load((ROOT / ".github/workflows/build-rocks.yaml").read_text())

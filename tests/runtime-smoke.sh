@@ -44,9 +44,9 @@ if [ "$RUNNER_PROFILE" = ubuntu ]; then
   python3 -c 'import launchpadlib'
   if command -v juju; then echo 'Unexpected Juju client in base profile' >&2; exit 1; fi
 else
-  juju version | grep -F 3.6.27
+  juju version | grep -F 3.6.29
 fi
-terraform version -json | jq -e '.terraform_version == "1.15.5"'
+terraform version -json | jq -e '.terraform_version == "1.17.2"'
 openstack --version
 git --version
 # Unlike git_bins alone, this exercises the HTTPS transport helper and DNS/TLS.

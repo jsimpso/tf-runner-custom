@@ -1,10 +1,10 @@
 name: tf-runner-juju-ubuntu-rock
 base: bare
-build-base: ubuntu@24.04
-version: '1.15.5-4'
+build-base: ubuntu@26.04
+version: '1.17.2-1'
 summary: Ubuntu Terraform and Juju runner for tofu-controller
 description: |
-  Candidate replacement for tf-runner-juju-ubuntu. Includes Juju 3.6.27 and the
+  Candidate replacement for tf-runner-juju-ubuntu. Includes Juju 3.6.29 and the
   Python cloud clients and shell tools used by Canonical infrastructure modules.
   The Ubuntu runtime is chiselled; third-party Python libraries are installed
   from hash-locked PyPI artifacts. No package manager, compiler or development
@@ -56,7 +56,7 @@ parts:
       - openssh-client_bins
       - openssh-client_config
       - openssl_bins
-      - python3.12_standard
+      - python3.14_standard
       - sed_bins
       - tar_bins
       - unzip_bins

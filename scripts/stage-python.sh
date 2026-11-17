@@ -9,7 +9,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 python3 -m venv "$work/build"
 "$work/build/bin/pip" install --require-hashes -r rocks/python/build.txt
-site_dir="$install_dir/usr/local/lib/python3.12/dist-packages"
+site_dir="$install_dir/usr/local/lib/python3.14/dist-packages"
 # A changed lock can remove packages; do not retain stale files on a rebuild.
 if [ -d "$site_dir" ]; then rm -rf "${site_dir:?}"; fi
 "$work/build/bin/pip" install --require-hashes --no-build-isolation --no-compile --no-cache-dir \
@@ -20,7 +20,7 @@ if [ -d "$site_dir" ]; then rm -rf "${site_dir:?}"; fi
 mkdir -p "$install_dir/usr/local/bin"
 for script in "$site_dir"/bin/*; do
   [ -f "$script" ] || continue
-  sed '1s|^#!.*python.*$|#!/usr/bin/python3.12|' "$script" \
+  sed '1s|^#!.*python.*$|#!/usr/bin/python3.14|' "$script" \
     > "$install_dir/usr/local/bin/$(basename "$script")"
   chmod 0755 "$install_dir/usr/local/bin/$(basename "$script")"
 done
