@@ -1,0 +1,86 @@
+name: Publish tested runner Rocks
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: 'Successful main push build run ID (blank: latest successful main build)'
+        type: string
+        required: false
+        default: ''
+
+permissions: {}
+
+# Serialize promotions to avoid concurrently publishing the same source tag.
+concurrency:
+  group: publish-runner-rocks
+  cancel-in-progress: false
+
+jobs:
+  select:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      run_id: ${{ steps.source.outputs.run_id }}
+      sha: ${{ steps.source.outputs.sha }}
+      matrix: ${{ steps.source.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select and validate tested build
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+        run: python3 scripts/select-rock-build.py --repository "$REPOSITORY" --run-id "$BUILD_RUN_ID"
+
+  publish:
+    needs: select
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select.outputs.matrix) }}
+    steps:
+      - name: Download tested archive (no rebuild or source execution)
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ matrix.artifact_id }}
+          run-id: ${{ needs.select.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: artifacts
+          merge-multiple: true
+      - name: Install OCI publishing tool
+        run: sudo apt-get update && sudo apt-get install -y skopeo
+      - name: Publish exact tested archive and record digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          ACTOR: ${{ github.actor }}
+          ARTIFACT: ${{ matrix.artifact }}
+          COMMIT: ${{ needs.select.outputs.sha }}
+          SOURCE_RUN: ${{ needs.select.outputs.run_id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mapfile -d '' rocks < <(find artifacts -type f -name '*.rock' -print0)
+          if [ "${#rocks[@]}" -ne 1 ]; then
+            echo 'Expected exactly one tested Rock archive' >&2
+            exit 1
+          fi
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          cleanup() { rm -f "$authfile"; }
+          trap cleanup EXIT
+          printf '%s' "$GH_TOKEN" | skopeo login --authfile "$authfile" --username "$ACTOR" --password-stdin ghcr.io
+          image="ghcr.io/${OWNER,,}/$ARTIFACT"
+          skopeo --insecure-policy copy --authfile "$authfile" --preserve-digests --digestfile digest.txt \
+            "oci-archive:${rocks[0]}" "docker://$image:sha-$COMMIT"
+          # shellcheck disable=SC2016 # Literal Markdown backticks, not command substitution.
+          printf 'Image: `%s@%s`\n\nSource: https://github.com/%s/actions/runs/%s\n\nCommit: `%s`\n' \
+            "$image" "$(cat digest.txt)" "$REPOSITORY" "$SOURCE_RUN" "$COMMIT" >> "$GITHUB_STEP_SUMMARY"

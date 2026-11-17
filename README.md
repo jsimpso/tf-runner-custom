@@ -137,9 +137,36 @@ shellcheck -x scripts/*.sh
 ### GitHub Actions and GHCR
 
 `build-rocks.yaml` builds and smoke-tests both recipes on relevant PRs and pushes,
-and uploads the tested `.rock` files as workflow artifacts. Publication is **opt-in**:
-run the workflow manually on `main` with `publish: true`. PR builds do not have
-package-write permissions.
+and uploads the tested `.rock` files as workflow artifacts. PR artifacts are kept
+for 3 days; main/manual build artifacts for 14 days. OCI archives are uploaded
+without extra ZIP compression. This policy applies to new uploads, not existing
+artifacts. The build workflow never has package-write permissions.
+
+Publication is **opt-in and does not rebuild**. Run `publish-rocks.yaml` on `main`:
+
+```bash
+# Publish the latest successful push build from main.
+gh workflow run publish-rocks.yaml --ref main
+
+# Or promote a particular tested main push build.
+gh workflow run publish-rocks.yaml --ref main -f build_run_id=43995318317
+```
+
+The optional run ID defaults to the newest successful `build-rocks.yaml` push
+run from `main`. Selection is resolved once for both images. The selector checks
+the repository, workflow, event, branch, successful completion, current main
+ancestry and both unexpired artifacts before granting publication to either job.
+PR and manual build runs are not eligible. Missing/expired artifacts fail clearly;
+there is no silent fallback to an older run. Choose another eligible run explicitly
+or trigger a fresh main push build. Downloads use immutable artifact IDs with a
+read-only Actions token. Publishing jobs do not check out or execute source code
+from the selected build; they only copy the saved OCI archives into GHCR.
+
+Image tags use the **source build's SHA**, not the publishing workflow commit.
+The job summary records the source run, SHA and published image digest. The OCI
+manifest digest is preserved during copying. Publishing is serialized; each image
+is a separate job, so a failed publication can leave one image published. Rerun
+against the same source run to complete the pair.
 
 Candidate packages are published to:
 
