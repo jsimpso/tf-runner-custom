@@ -1,0 +1,2 @@
+-r common.in
+launchpadlib==1.11.0

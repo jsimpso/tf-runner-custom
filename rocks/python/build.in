@@ -1,0 +1,4 @@
+# Native extension builds run without PEP 517 isolation, using these hash-locked
+# tools instead of downloading unpinned build dependencies.
+setuptools>=84.1
+wheel>=0.46.2

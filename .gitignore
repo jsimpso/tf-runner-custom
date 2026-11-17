@@ -1,0 +1,16 @@
+# Packed OCI archives and local Python tooling.
+*.rock
+__pycache__/
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Rockcraft workspaces (including local/destructive-mode builds).
+rocks/*/parts/
+rocks/*/stage/
+rocks/*/prime/
+rocks/*/overlay/
+rocks/*/images/
+rocks/*/bundles/
+
+# rocks/python/*.in and *.txt are versioned dependency inputs/locks, not output.

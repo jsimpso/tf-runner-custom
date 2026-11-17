@@ -1,0 +1,93 @@
+name: tf-runner-ubuntu-rock
+base: bare
+build-base: ubuntu@24.04
+version: '1.15.5-2'
+summary: Ubuntu Terraform runner for tofu-controller
+description: |
+  Candidate replacement for tf-runner-ubuntu. Includes the Python cloud clients
+  and shell tools used by Canonical infrastructure modules. The Ubuntu runtime
+  is chiselled; third-party Python libraries are installed from hash-locked PyPI
+  artifacts. No package manager, editor or development headers are included.
+license: Apache-2.0
+platforms:
+  amd64:
+run-user: _daemon_
+# tofu-controller supplies bare --grpc-* arguments and forces UID 65532.
+# Pebble binds those OCI arguments to the service's optional argument list.
+entrypoint-service: tf-runner
+environment:
+  HOME: /home/runner
+  TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
+  PEBBLE: /tmp/pebble
+  PEBBLE_COPY_ONCE: /var/lib/pebble/default
+  PEBBLE_VERBOSE: '1'
+services:
+  tf-runner:
+    override: replace
+    command: /usr/local/bin/start-runner [ ]
+    startup: enabled
+    on-success: shutdown
+    on-failure: shutdown
+parts:
+  runtime:
+    plugin: nil
+    stage-packages:
+      - base-files_base
+      - base-files_release-info
+      - base-files_chisel
+      - bash_bins
+      - ca-certificates_data
+      - coreutils_bins
+      - curl_bins
+      - dash_bins
+      - findutils_bins
+      - git_bins
+      - git_http-support
+      - grep_bins
+      - gzip_bins
+      - jq_bins
+      - libffi8_libs
+      - libldap2_libs
+      - libsasl2-2_libs
+      - libstdc++6_libs
+      - openssh-client_bins
+      - openssh-client_config
+      - openssl_bins
+      - python3.12_standard
+      - sed_bins
+      - tar_bins
+      - unzip_bins
+      - xz-utils_bins
+  python-clients:
+    plugin: nil
+    source: ../..
+    override-pull: |
+      set -o pipefail
+      mkdir -p "$CRAFT_PART_SRC"
+      tar -C "$CRAFT_PROJECT_DIR/../.." --exclude=__pycache__ -cf - \
+        scripts rocks/python | tar -xf - -C "$CRAFT_PART_SRC"
+    build-packages: [gcc, libldap2-dev, libsasl2-dev, libssl-dev, python3-dev, python3-venv]
+    override-build: |
+      cd "$CRAFT_PART_SRC"
+      bash scripts/stage-python.sh ubuntu
+  runner:
+    plugin: nil
+    source: ../..
+    # Copy only build inputs. Copying the whole monorepo recursively includes
+    # this and sibling projects' parts/stage/prime directories on a rebuild.
+    override-pull: |
+      set -o pipefail
+      mkdir -p "$CRAFT_PART_SRC"
+      tar -C "$CRAFT_PROJECT_DIR/../.." --exclude=__pycache__ -cf - \
+        scripts rocks/versions.env LICENSE \
+        tf-runner-ubuntu/hermitcrab-mirror-ca.crt \
+        tf-runner-juju-ubuntu/hermitcrab-mirror-ca.crt \
+        | tar -xf - -C "$CRAFT_PART_SRC"
+    build-packages: [curl, skopeo, umoci, unzip, xz-utils]
+    override-build: |
+      cd "$CRAFT_PART_SRC"
+      bash scripts/stage-runner.sh ubuntu
+    after: [runtime, python-clients]
+    override-prime: |
+      craftctl default
+      bash "$CRAFT_PART_SRC/scripts/prime-runner.sh"

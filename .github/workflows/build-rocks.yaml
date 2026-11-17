@@ -1,0 +1,115 @@
+name: Build and test runner Rocks
+
+on:
+  pull_request:
+    paths:
+      - 'rocks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'tf-runner-ubuntu/hermitcrab-mirror-ca.crt'
+      - 'tf-runner-juju-ubuntu/hermitcrab-mirror-ca.crt'
+      - '.github/workflows/build-rocks.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'rocks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'tf-runner-ubuntu/hermitcrab-mirror-ca.crt'
+      - 'tf-runner-juju-ubuntu/hermitcrab-mirror-ca.crt'
+      - '.github/workflows/build-rocks.yaml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish tested candidate images (main only)
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: tf-runner-ubuntu
+            profile: ubuntu
+          - project: tf-runner-juju-ubuntu
+            profile: juju
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test project contracts
+        run: |
+          python3 -m venv "$RUNNER_TEMP/test-venv"
+          "$RUNNER_TEMP/test-venv/bin/pip" install -r tests/requirements.txt
+          "$RUNNER_TEMP/test-venv/bin/python" -m unittest discover -s tests -v
+          for script in scripts/*.sh tests/*.sh; do bash -n "$script"; done
+          shellcheck -x scripts/*.sh tests/*.sh
+      - name: Audit locked Python runtime dependencies
+        run: |
+          "$RUNNER_TEMP/test-venv/bin/pip-audit" --disable-pip --no-deps --progress-spinner off \
+            -r rocks/python/common.txt -r rocks/python/ubuntu.txt -r rocks/python/build.txt
+      - name: Pack Rock
+        id: pack
+        uses: canonical/craft-actions/rockcraft/pack@67781aa5b0245eafdc6495760649c54c86059dfa # main (2026-11-07)
+        env:
+          # Rockcraft 1.21+: mount the Git root, not just rocks/<project>, so
+          # override-pull can read the shared scripts, locks and certificates.
+          ROCKCRAFT_EXPERIMENTAL_MONOREPO: '1'
+        with:
+          path: rocks/${{ matrix.project }}
+          channel: latest/stable
+      - name: Load and smoke-test candidate
+        env:
+          PROJECT: ${{ matrix.project }}
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          rock=$(find "rocks/$PROJECT" -maxdepth 1 -name '*.rock' -print -quit)
+          test -n "$rock"
+          sudo rockcraft.skopeo --insecure-policy copy "oci-archive:$rock" "docker-daemon:$PROJECT-rock:test"
+          bash scripts/smoke-test-rock.sh "$PROJECT-rock:test" "$PROFILE"
+          docker image inspect "$PROJECT-rock:test" --format 'Size: {{.Size}} bytes' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save tested Rock
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.project }}-rock
+          path: rocks/${{ matrix.project }}/*.rock
+          if-no-files-found: error
+
+  publish:
+    # Candidates only: existing Docker image names/tags remain untouched.
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        project: [tf-runner-ubuntu, tf-runner-juju-ubuntu]
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ matrix.project }}-rock
+          path: artifacts
+      - name: Install OCI publishing tool
+        run: sudo apt-get update && sudo apt-get install -y skopeo
+      - name: Publish candidate and record digest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          ACTOR: ${{ github.actor }}
+          PROJECT: ${{ matrix.project }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          printf '%s' "$GH_TOKEN" | skopeo login --username "$ACTOR" --password-stdin ghcr.io
+          image="ghcr.io/${OWNER,,}/$PROJECT-rock"
+          rock=$(find artifacts -name '*.rock' -print -quit)
+          skopeo --insecure-policy copy --digestfile digest.txt "oci-archive:$rock" "docker://$image:sha-$COMMIT"
+          printf '%s@%s\n' "$image" "$(cat digest.txt)" >> "$GITHUB_STEP_SUMMARY"
