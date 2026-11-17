@@ -162,16 +162,30 @@ or trigger a fresh main push build. Downloads use immutable artifact IDs with a
 read-only Actions token. Publishing jobs do not check out or execute source code
 from the selected build; they only copy the saved OCI archives into GHCR.
 
-Image tags use the **source build's SHA**, not the publishing workflow commit.
-The job summary records the source run, SHA and published image digest. The OCI
+Both variants receive a readable tag such as
+`tf-1.15.5_runner-0.16.3_u24.04_r2`, plus the existing `sha-<source-commit>` tag.
+Terraform and runner versions come from `rocks/versions.env` at the selected
+build's SHA; Ubuntu comes from the recipe's build-base and `r2` from its
+`version: 1.15.5-2`. No Juju version is included. Historical builds without
+`RUNNER_VERSION` are supported only for the explicitly verified legacy runner
+digest, not inferred from current main. Archive version labels must match the
+selected recipe. The publisher checks both tags before copying and refuses to
+replace either with a different digest; an identical digest is an idempotent no-op.
+If image contents change without a Terraform, runner or Ubuntu version change,
+increment the Rock revision in **both recipes**. Never reuse a release tag for a
+different build. The workflow serializes its own publishes, but GHCR does not
+enforce immutability against other clients, so do not manually move these tags.
+
+Image tags use **source build metadata**, not the publishing workflow commit.
+The job summary records the source run, tags and published image digest. The OCI
 manifest digest is preserved during copying. Publishing is serialized; each image
 is a separate job, so a failed publication can leave one image published. Rerun
 against the same source run to complete the pair.
 
 Candidate packages are published to:
 
-* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:sha-<commit>`
-* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:sha-<commit>`
+* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:tf-1.15.5_runner-0.16.3_u24.04_r2`
+* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:tf-1.15.5_runner-0.16.3_u24.04_r2`
 
 Today the owner is `jsimpso`; repository transfer to Canonical is deferred until
 the images are proven. The workflow prints each manifest digest for downstream

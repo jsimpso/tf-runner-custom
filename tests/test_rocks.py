@@ -165,8 +165,10 @@ class RockContracts(unittest.TestCase):
         self.assertNotIn("packages", workflow["jobs"]["select"]["permissions"])
         publish = workflow["jobs"]["publish"]
         self.assertEqual(publish["needs"], "select")
-        self.assertFalse(any("checkout@" in step.get("uses", "") for step in publish["steps"]))
-        download = publish["steps"][0]["with"]
+        checkout = next(step for step in publish["steps"] if "checkout@" in step.get("uses", ""))
+        self.assertEqual(checkout["with"]["ref"], "${{ github.sha }}")
+        self.assertFalse(checkout["with"]["persist-credentials"])
+        download = next(step for step in publish["steps"] if "download-artifact@" in step.get("uses", ""))["with"]
         self.assertIn("artifact_id", download["artifact-ids"])
         self.assertIn("run_id", download["run-id"])
 
