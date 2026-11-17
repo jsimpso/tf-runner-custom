@@ -54,8 +54,27 @@ git ls-remote https://github.com/flux-iac/tofu-controller.git HEAD
 ssh -V
 openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt \
   /usr/local/share/ca-certificates/hermitcrab-mirror-ca.crt
+# A git module source, which Terraform clones and then runs `git submodule update`
+# on. The image only clones from remote servers, so it has no git-upload-pack;
+# this test-only alias plays the server's part for a local repository.
+mkdir -p /tmp/git-server-bin /tmp/tf-module
+ln -s /usr/lib/git-core/git /tmp/git-server-bin/git-upload-pack
+export PATH="/tmp/git-server-bin:$PATH"
+git -C /tmp/tf-module init -q
+echo 'output "source" { value = "git-module-ok" }' > /tmp/tf-module/main.tf
+git -C /tmp/tf-module add main.tf
+git -C /tmp/tf-module -c user.name=smoke -c user.email=smoke@example.invalid commit -q -m module
+git -C /tmp/tf-module tag v1
 cd /tmp/tf-smoke
 cat > main.tf <<'EOF'
+module "git_source" {
+  source = "git::file:///tmp/tf-module?ref=v1"
+}
+
+output "module_source" {
+  value = module.git_source.source
+}
+
 resource "terraform_data" "smoke" {
   input = "rock"
   provisioner "local-exec" {
@@ -68,4 +87,5 @@ terraform validate
 terraform plan -input=false -out=plan
 terraform apply -input=false plan
 grep -q runtime-ok runtime.txt
+test "$(terraform output -raw module_source)" = git-module-ok
 terraform destroy -auto-approve -input=false

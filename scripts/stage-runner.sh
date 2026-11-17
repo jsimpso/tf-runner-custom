@@ -31,6 +31,21 @@ if [ "$profile" = juju ]; then
   tar -xJf "$work/juju.tar.xz" -C "$work/juju"
   install -m 0755 "$work/juju/juju" "$install_dir/usr/local/bin/juju"
 fi
+# Chisel's git slices ship only the git binary and transport helpers, not git's
+# shell-script commands. Terraform's module getter runs `git submodule update`
+# after every git clone, so add git-submodule and the shell libraries it sources,
+# taken from the same git DEB as the chiselled binary.
+git_core=usr/lib/git-core
+(cd "$work" && apt-get -o APT::Sandbox::User=root download git)
+dpkg-deb -x "$work"/git_*.deb "$work/git-deb"
+if ! cmp -s "$work/git-deb/$git_core/git" "${CRAFT_STAGE:?}/$git_core/git"; then
+  echo "Downloaded git DEB does not match the chiselled git binary" >&2
+  exit 1
+fi
+for helper in git-submodule git-sh-setup git-sh-i18n git-sh-i18n--envsubst; do
+  install -D -m "$(stat -c %a "$work/git-deb/$git_core/$helper")" \
+    "$work/git-deb/$git_core/$helper" "$install_dir/$git_core/$helper"
+done
 install -m 0755 scripts/start-runner.sh "$install_dir/usr/local/bin/start-runner"
 install -D -m 0644 LICENSE "$install_dir/usr/share/doc/tf-runner-rock/LICENSE"
 ca_dir=tf-runner-ubuntu

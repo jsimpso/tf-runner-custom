@@ -26,6 +26,11 @@ It includes the shell/network tools, Git's separate HTTPS helper, Python 3.12
 standard library and native LDAP/SASL libraries. `base-files_chisel` explicitly
 requests a Chisel manifest under `/var/lib/chisel`; the smoke suite checks that
 the manifest is retained. Scanner support for this inventory varies by tool.
+The git slices omit git's shell-script commands, but Terraform runs `git submodule`
+after cloning any git module source. `git-submodule`, the `git-sh-setup` and
+`git-sh-i18n` libraries it sources, and the `git-sh-i18n--envsubst` helper are
+therefore copied from the git DEB, which the build checks is the same version as
+the chiselled git binary. They are not in the Chisel manifest.
 
 The third-party Python clients do not have upstream Noble slices. They are
 installed separately from hash-locked PyPI artifacts under
