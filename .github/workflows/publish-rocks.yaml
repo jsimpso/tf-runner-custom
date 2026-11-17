@@ -45,10 +45,16 @@ jobs:
     permissions:
       actions: read
       packages: write
+      contents: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.select.outputs.matrix) }}
     steps:
+      - name: Checkout publishing code (not selected build source)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Download tested archive (no rebuild or source execution)
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -66,21 +72,13 @@ jobs:
           ACTOR: ${{ github.actor }}
           ARTIFACT: ${{ matrix.artifact }}
           COMMIT: ${{ needs.select.outputs.sha }}
+          RELEASE_TAG: ${{ matrix.release_tag }}
+          ROCK_VERSION: ${{ matrix.rock_version }}
           SOURCE_RUN: ${{ needs.select.outputs.run_id }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          mapfile -d '' rocks < <(find artifacts -type f -name '*.rock' -print0)
-          if [ "${#rocks[@]}" -ne 1 ]; then
-            echo 'Expected exactly one tested Rock archive' >&2
-            exit 1
-          fi
-          authfile="$RUNNER_TEMP/ghcr-auth.json"
-          cleanup() { rm -f "$authfile"; }
+          export REGISTRY_AUTH_FILE="$RUNNER_TEMP/ghcr-auth.json"
+          cleanup() { rm -f "$REGISTRY_AUTH_FILE"; }
           trap cleanup EXIT
-          printf '%s' "$GH_TOKEN" | skopeo login --authfile "$authfile" --username "$ACTOR" --password-stdin ghcr.io
-          image="ghcr.io/${OWNER,,}/$ARTIFACT"
-          skopeo --insecure-policy copy --authfile "$authfile" --preserve-digests --digestfile digest.txt \
-            "oci-archive:${rocks[0]}" "docker://$image:sha-$COMMIT"
-          # shellcheck disable=SC2016 # Literal Markdown backticks, not command substitution.
-          printf 'Image: `%s@%s`\n\nSource: https://github.com/%s/actions/runs/%s\n\nCommit: `%s`\n' \
-            "$image" "$(cat digest.txt)" "$REPOSITORY" "$SOURCE_RUN" "$COMMIT" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s' "$GH_TOKEN" | skopeo login --authfile "$REGISTRY_AUTH_FILE" --username "$ACTOR" --password-stdin ghcr.io
+          python3 scripts/publish-rock.py

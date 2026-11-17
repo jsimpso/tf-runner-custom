@@ -1,5 +1,6 @@
 """Test promotion trust boundaries without contacting GitHub."""
 
+import base64
 import copy
 import importlib.util
 import unittest
@@ -19,9 +20,15 @@ class SelectRockBuild(unittest.TestCase):
             for index, name in enumerate(selector.ARTIFACTS, 10)
         ]}
         self.calls = []
+        self.versions = "TF_VERSION=1.15.5\nRUNNER_VERSION=0.16.3\n"
+        self.recipe = "version: '1.15.5-2'\nbase: bare\nbuild-base: ubuntu@24.04\n"
 
     def api(self, endpoint):
         self.calls.append(endpoint)
+        if "/contents/" in endpoint:
+            self.assertTrue(endpoint.endswith("?ref=" + "a" * 40))
+            text = self.versions if "/versions.env?" in endpoint else self.recipe
+            return {"content": base64.b64encode(text.encode()).decode()}
         if endpoint.endswith("/workflows/build-rocks.yaml"):
             return {"id": 7}
         if "/runs?" in endpoint:
@@ -39,6 +46,9 @@ class SelectRockBuild(unittest.TestCase):
         self.assertEqual(result["run_id"], "42")
         self.assertEqual(result["sha"], "a" * 40)
         self.assertEqual([item["artifact_id"] for item in result["matrix"]["include"]], [10, 11])
+        for item in result["matrix"]["include"]:
+            self.assertEqual(item["release_tag"], "tf-1.15.5_runner-0.16.3_u24.04_r2")
+            self.assertEqual(item["rock_version"], "1.15.5-2")
         self.assertTrue(any("branch=main&event=push&status=success" in call for call in self.calls))
 
     def test_explicit_run_skips_discovery(self):
@@ -82,3 +92,23 @@ class SelectRockBuild(unittest.TestCase):
             return {"workflow_runs": []} if "/runs?" in endpoint else self.api(endpoint)
         with self.assertRaises(ValueError):
             selector.select_build("owner/repo", api=api)
+
+    def test_historical_verified_runner_pin(self):
+        pin = next(iter(selector.LEGACY_RUNNERS))
+        self.versions = f"TF_VERSION=1.15.5\nRUNNER_IMAGE={pin}\n"
+        result = selector.select_build("owner/repo", api=self.api)
+        self.assertIn("runner-0.16.3", result["matrix"]["include"][0]["release_tag"])
+
+    def test_rejects_missing_ambiguous_or_inconsistent_versions(self):
+        for versions, recipe in (
+            ("TF_VERSION=1.15.5\nRUNNER_IMAGE=unknown\n", self.recipe),
+            (self.versions.replace("0.16.3", "invalid"), self.recipe),
+            (self.versions + "TF_VERSION=1.15.5\n", self.recipe),
+            (self.versions, self.recipe.replace("1.15.5-2", "1.15.4-2")),
+            (self.versions, self.recipe.replace("1.15.5-2", "1.15.5-0")),
+            (self.versions, self.recipe.replace("ubuntu@24.04", "unknown")),
+        ):
+            with self.subTest(versions=versions, recipe=recipe):
+                self.versions, self.recipe = versions, recipe
+                with self.assertRaises(ValueError):
+                    selector.select_build("owner/repo", api=self.api)
