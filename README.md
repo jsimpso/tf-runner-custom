@@ -118,7 +118,10 @@ default user; otherwise use rootful Docker/Podman without changing your host map
 
 The smoke suite starts the actual entrypoint against a loopback mock Kubernetes
 Secret API, establishes an mTLS/HTTP2 handshake at the configured gRPC port, and
-checks shutdown at both runtime UIDs. It also checks read-only execution, Python
+checks shutdown at both runtime UIDs. Runners before v0.17.0 ignore SIGTERM when
+idle, so for those (per `RUNNER_VERSION`) it checks that Pebble begins shutdown
+but has not killed the runner after its 5s default, i.e. `kill-delay` is in effect;
+from v0.17.0 it expects a clean exit. It also checks read-only execution, Python
 imports (including native LDAP), tools and versions, the mirror CA, and an offline
 Terraform init/plan/apply/destroy with `local-exec`. Only dummy, ephemeral TLS
 credentials are used. The test requires host networking on Linux.

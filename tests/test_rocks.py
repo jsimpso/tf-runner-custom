@@ -9,6 +9,8 @@ import unittest
 
 import yaml
 
+import entrypoint_smoke
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
@@ -124,6 +126,21 @@ class RockContracts(unittest.TestCase):
             self.assertEqual(lines, arguments)
             self.assertTrue((home / "cache").is_dir())
             self.assertTrue((home / ".local/share/juju").is_dir())
+
+    def test_smoke_reads_the_pinned_runner_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            versions = pathlib.Path(temporary) / "versions.env"
+            versions.write_text("# comment\nRUNNER_VERSION=0.16.3\nRUNNER_IMAGE=example@sha256:0\n")
+            self.assertEqual(entrypoint_smoke.recipe_runner_version(versions), (0, 16, 3))
+            versions.write_text("RUNNER_IMAGE=example@sha256:0\n")
+            with self.assertRaisesRegex(ValueError, "No RUNNER_VERSION"):
+                entrypoint_smoke.recipe_runner_version(versions)
+        self.assertIsInstance(entrypoint_smoke.recipe_runner_version(), tuple)
+
+    def test_smoke_expects_idle_sigterm_exit_from_v0_17(self):
+        self.assertFalse(entrypoint_smoke.idle_runner_exits_on_sigterm((0, 16, 3)))
+        self.assertTrue(entrypoint_smoke.idle_runner_exits_on_sigterm((0, 17, 0)))
+        self.assertTrue(entrypoint_smoke.idle_runner_exits_on_sigterm((1, 0, 0)))
 
     def test_runtime_and_entrypoint(self):
         for name in ("tf-runner-ubuntu", "tf-runner-juju-ubuntu"):

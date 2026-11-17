@@ -19,12 +19,52 @@ import time
 import urllib.parse
 import uuid
 
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+# Longer than Pebble's 5s default kill-delay, so a runner still alive afterwards
+# shows that the service's own kill-delay is in effect.
+KILL_DELAY_PROBE_SECONDS = 8
+
 
 def run(engine, *arguments, **kwargs):
     return subprocess.run([engine, *arguments], check=True, text=True, **kwargs)
 
 
-def test_entrypoint(engine, image, uid, explicit_user):
+def recipe_runner_version(versions_file=ROOT / "rocks/versions.env"):
+    """Return the tf-runner version that rocks/versions.env pins, as a tuple of ints."""
+    for line in versions_file.read_text().splitlines():
+        if line.startswith("RUNNER_VERSION="):
+            return tuple(int(part) for part in line.removeprefix("RUNNER_VERSION=").split("."))
+    raise ValueError(f"No RUNNER_VERSION in {versions_file}")
+
+
+def idle_runner_exits_on_sigterm(runner_version):
+    """Runners before v0.17.0 consume SIGTERM only during a plan or apply, never exiting when idle."""
+    return runner_version >= (0, 17, 0)
+
+
+def container_state(engine, name, field):
+    return run(engine, "inspect", "--format", f"{{{{.State.{field}}}}}", name,
+               capture_output=True).stdout.strip()
+
+
+def check_shutdown(engine, name, runner_version):
+    if idle_runner_exits_on_sigterm(runner_version):
+        run(engine, "stop", "--time", "15", name, capture_output=True)
+        code = container_state(engine, name, "ExitCode")
+        assert code == "0", f"Supervisor exited with {code}"
+        return
+    # The idle runner ignores SIGTERM, so Pebble waits out its kill-delay. Check that
+    # Pebble starts stopping the service but has not killed it after its own default.
+    run(engine, "kill", "--signal", "TERM", name, capture_output=True)
+    time.sleep(KILL_DELAY_PROBE_SECONDS)
+    logs = run(engine, "logs", name, capture_output=True)
+    assert "Stopping all running services" in logs.stdout + logs.stderr, "Pebble did not begin shutdown"
+    running = container_state(engine, name, "Running")
+    assert running == "true", f"Runner was stopped within {KILL_DELAY_PROBE_SECONDS}s of SIGTERM"
+    run(engine, "kill", name, capture_output=True)
+
+
+def test_entrypoint(engine, image, uid, explicit_user, runner_version):
     with tempfile.TemporaryDirectory(prefix="runner-tls-") as temporary:
         directory = pathlib.Path(temporary)
         directory.chmod(0o755)
@@ -125,10 +165,7 @@ def test_entrypoint(engine, image, uid, explicit_user):
             assert actual_uid == str(uid), f"Unexpected runtime UID: {actual_uid}"
             # Allow Pebble's startup change to finish before testing shutdown.
             time.sleep(2)
-            run(engine, "stop", "--time", "15", name, capture_output=True)
-            code = run(engine, "inspect", "--format", "{{.State.ExitCode}}", name,
-                       capture_output=True).stdout.strip()
-            assert code == "0", f"Supervisor exited with {code}"
+            check_shutdown(engine, name, runner_version)
             logs = run(engine, "logs", name, capture_output=True)
             assert "Starting the runner" in logs.stdout + logs.stderr, "Runner logs were not forwarded"
             print(f"Entrypoint, Secret lookup, mTLS/HTTP2 and shutdown passed at UID {uid}")
@@ -145,5 +182,6 @@ if __name__ == "__main__":
     parser.add_argument("--engine", default=os.environ.get("CONTAINER_ENGINE", "docker"))
     parser.add_argument("image")
     options = parser.parse_args()
-    test_entrypoint(options.engine, options.image, 65532, True)
-    test_entrypoint(options.engine, options.image, 584792, False)
+    version = recipe_runner_version()
+    test_entrypoint(options.engine, options.image, 65532, True, version)
+    test_entrypoint(options.engine, options.image, 584792, False, version)
