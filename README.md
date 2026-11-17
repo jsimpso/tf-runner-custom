@@ -99,6 +99,9 @@ Docker build context and combine it with the Ubuntu trust bundle at build time.
 PyPI certifi is deliberately pointed at that augmented Ubuntu bundle, matching
 the baseline's distro behavior. Its RECORD entry is updated for the substitution.
 Native LDAP is also configured to use the augmented Ubuntu CA bundle.
+OpenSSH 10.2 warns on stderr about servers without post-quantum key exchange;
+`WarnWeakCrypto no` keeps that off, because some modules treat any ssh stderr
+as a failure.
 
 ### Build and test locally
 

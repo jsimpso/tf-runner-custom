@@ -1,7 +1,7 @@
 name: tf-runner-ubuntu-rock
 base: bare
 build-base: ubuntu@26.04
-version: '1.17.2-1'
+version: '1.17.2-2'
 summary: Ubuntu Terraform runner for tofu-controller
 description: |
   Candidate replacement for tf-runner-ubuntu. Includes the Python cloud clients

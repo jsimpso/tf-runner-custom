@@ -12,6 +12,11 @@ ln -sf python3.14 "$prime/usr/bin/python3"
 # Ubuntu baseline's default TLS trust store for native LDAP clients as well.
 mkdir -p "$prime/etc/ldap"
 printf 'TLS_CACERT /etc/ssl/certs/ca-certificates.crt\n' > "$prime/etc/ldap/ldap.conf"
+# OpenSSH 10.1+ warns on stderr when a server lacks post-quantum key exchange.
+# Modules that treat any ssh stderr as failure (e.g. Plinth subnet lookups) then
+# fail, so keep the quieter pre-26.04 behaviour until those servers support it.
+mkdir -p "$prime/etc/ssh/ssh_config.d"
+printf 'WarnWeakCrypto no\n' > "$prime/etc/ssh/ssh_config.d/50-tf-runner.conf"
 # ca-certificates_data supplies the public bundle, not individual certificates.
 # Preserve it, and avoid appending the private mirror's public CA twice on reprime.
 python3 - "$prime" <<'PY'

@@ -52,6 +52,8 @@ git --version
 # Unlike git_bins alone, this exercises the HTTPS transport helper and DNS/TLS.
 git ls-remote https://github.com/flux-iac/tofu-controller.git HEAD
 ssh -V
+# Modules treat any ssh stderr as failure; the post-quantum warning must stay off.
+ssh -G example.invalid | grep -qx 'warnweakcrypto no'
 openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt \
   /usr/local/share/ca-certificates/hermitcrab-mirror-ca.crt
 # A git module source, which Terraform clones and then runs `git submodule update`

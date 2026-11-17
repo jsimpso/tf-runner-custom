@@ -42,6 +42,8 @@ class RockContracts(unittest.TestCase):
             self.assertEqual(os.readlink(root / "usr/bin/python3"), "python3.14")
             self.assertEqual((root / "etc/ldap/ldap.conf").read_text(),
                              "TLS_CACERT /etc/ssl/certs/ca-certificates.crt\n")
+            self.assertEqual((root / "etc/ssh/ssh_config.d/50-tf-runner.conf").read_text(),
+                             "WarnWeakCrypto no\n")
             self.assertEqual((root / "etc/passwd").read_text().count("runner:x:"), 1)
 
     def test_pull_does_not_copy_previous_builds(self):
