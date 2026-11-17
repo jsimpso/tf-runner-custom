@@ -58,7 +58,7 @@ or other inventory metadata to save space.
 
 The earlier bare-DEB baseline was approximately 187 MiB (Ubuntu) / 233 MiB
 (Juju) uncompressed. Its version was `1.15.5-1`; the first chiselled candidate
-was `1.15.5-2` on Ubuntu 24.04, and the current one is `1.17.2-1` on 26.04.
+was `1.15.5-2` on Ubuntu 24.04, and the current one is `1.17.2-3` on 26.04.
 Compare inventories, sizes and compatibility before promotion.
 The runner needs shell execution; a shell-free image would not be compatible.
 
@@ -76,7 +76,7 @@ controller/cloud reconciliation.
 
 ### Runtime contract
 
-The tofu-controller v0.16.3 runner pod passes `--grpc-port`, `--tls-secret-name`
+The tofu-controller v0.17.0 runner pod passes `--grpc-port`, `--tls-secret-name`
 and `--grpc-max-message-size` as OCI arguments. It runs as UID 65532, drops all
 capabilities and mounts writable `/tmp` and `/home/runner` on a read-only root.
 
@@ -114,7 +114,7 @@ without it only the recipe directory is visible. Run from each project directory
 cd rocks/tf-runner-ubuntu
 ROCKCRAFT_EXPERIMENTAL_MONOREPO=1 rockcraft pack
 sudo rockcraft.skopeo --insecure-policy copy \
-  oci-archive:tf-runner-ubuntu-rock_1.17.2-1_amd64.rock \
+  oci-archive:tf-runner-ubuntu-rock_1.17.2-3_amd64.rock \
   docker-daemon:tf-runner-ubuntu-rock:test
 cd ../..
 bash scripts/smoke-test-rock.sh tf-runner-ubuntu-rock:test ubuntu
@@ -176,10 +176,10 @@ read-only Actions token. Publishing jobs do not check out or execute source code
 from the selected build; they only copy the saved OCI archives into GHCR.
 
 Both variants receive a readable tag such as
-`tf-1.17.2_runner-0.16.3_u26.04_r1`, plus the existing `sha-<source-commit>` tag.
+`tf-1.17.2_runner-0.17.0_u26.04_r3`, plus the existing `sha-<source-commit>` tag.
 Terraform and runner versions come from `rocks/versions.env` at the selected
-build's SHA; Ubuntu comes from the recipe's build-base and `r1` from its
-`version: 1.17.2-1`. No Juju version is included. Historical builds without
+build's SHA; Ubuntu comes from the recipe's build-base and `r3` from its
+`version: 1.17.2-3`. No Juju version is included. Historical builds without
 `RUNNER_VERSION` are supported only for the explicitly verified legacy runner
 digest, not inferred from current main. Archive version labels must match the
 selected recipe. The publisher checks both tags before copying and refuses to
@@ -197,8 +197,8 @@ against the same source run to complete the pair.
 
 Candidate packages are published to:
 
-* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:tf-1.17.2_runner-0.16.3_u26.04_r1`
-* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:tf-1.17.2_runner-0.16.3_u26.04_r1`
+* `ghcr.io/<repository-owner>/tf-runner-ubuntu-rock:tf-1.17.2_runner-0.17.0_u26.04_r3`
+* `ghcr.io/<repository-owner>/tf-runner-juju-ubuntu-rock:tf-1.17.2_runner-0.17.0_u26.04_r3`
 
 Today the owner is `jsimpso`; repository transfer to Canonical is deferred until
 the images are proven. The workflow prints each manifest digest for downstream

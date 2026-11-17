@@ -1,7 +1,7 @@
 name: tf-runner-juju-ubuntu-rock
 base: bare
 build-base: ubuntu@26.04
-version: '1.17.2-2'
+version: '1.17.2-3'
 summary: Ubuntu Terraform and Juju runner for tofu-controller
 description: |
   Candidate replacement for tf-runner-juju-ubuntu. Includes Juju 3.6.29 and the
