@@ -151,14 +151,24 @@ class RockContracts(unittest.TestCase):
 
     def test_candidate_publication_is_opt_in(self):
         workflow = yaml.safe_load((ROOT / ".github/workflows/build-rocks.yaml").read_text())
+        self.assertNotIn("publish", workflow["jobs"])
+        self.assertEqual(workflow["jobs"]["build"]["permissions"], {"contents": "read"})
+        upload = next(step for step in workflow["jobs"]["build"]["steps"] if step.get("name") == "Save tested Rock")
+        self.assertEqual(upload["with"]["compression-level"], 0)
+        self.assertIn("3 || 14", upload["with"]["retention-days"])
+        workflow = yaml.safe_load((ROOT / ".github/workflows/publish-rocks.yaml").read_text())
         # PyYAML's YAML 1.1 parser interprets the GitHub 'on' key as True.
         triggers = workflow.get("on", workflow.get(True))
-        self.assertFalse(triggers["workflow_dispatch"]["inputs"]["publish"]["default"])
-        condition = workflow["jobs"]["publish"]["if"]
-        self.assertIn("workflow_dispatch", condition)
-        self.assertIn("inputs.publish", condition)
-        self.assertIn("refs/heads/main", condition)
-        self.assertEqual(workflow["jobs"]["build"]["permissions"], {"contents": "read"})
+        self.assertEqual(set(triggers), {"workflow_dispatch"})
+        self.assertEqual(triggers["workflow_dispatch"]["inputs"]["build_run_id"]["default"], "")
+        self.assertIn("refs/heads/main", workflow["jobs"]["select"]["if"])
+        self.assertNotIn("packages", workflow["jobs"]["select"]["permissions"])
+        publish = workflow["jobs"]["publish"]
+        self.assertEqual(publish["needs"], "select")
+        self.assertFalse(any("checkout@" in step.get("uses", "") for step in publish["steps"]))
+        download = publish["steps"][0]["with"]
+        self.assertIn("artifact_id", download["artifact-ids"])
+        self.assertIn("run_id", download["run-id"])
 
     def test_managed_build_mounts_shared_repository_inputs(self):
         workflow = yaml.safe_load((ROOT / ".github/workflows/build-rocks.yaml").read_text())

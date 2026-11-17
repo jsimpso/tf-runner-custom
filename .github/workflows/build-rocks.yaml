@@ -19,11 +19,6 @@ on:
       - 'tf-runner-juju-ubuntu/hermitcrab-mirror-ca.crt'
       - '.github/workflows/build-rocks.yaml'
   workflow_dispatch:
-    inputs:
-      publish:
-        description: Publish tested candidate images (main only)
-        type: boolean
-        default: false
 
 permissions: {}
 
@@ -81,35 +76,5 @@ jobs:
           name: ${{ matrix.project }}-rock
           path: rocks/${{ matrix.project }}/*.rock
           if-no-files-found: error
-
-  publish:
-    # Candidates only: existing Docker image names/tags remain untouched.
-    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        project: [tf-runner-ubuntu, tf-runner-juju-ubuntu]
-    steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: ${{ matrix.project }}-rock
-          path: artifacts
-      - name: Install OCI publishing tool
-        run: sudo apt-get update && sudo apt-get install -y skopeo
-      - name: Publish candidate and record digest
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          ACTOR: ${{ github.actor }}
-          PROJECT: ${{ matrix.project }}
-          COMMIT: ${{ github.sha }}
-        run: |
-          printf '%s' "$GH_TOKEN" | skopeo login --username "$ACTOR" --password-stdin ghcr.io
-          image="ghcr.io/${OWNER,,}/$PROJECT-rock"
-          rock=$(find artifacts -name '*.rock' -print -quit)
-          skopeo --insecure-policy copy --digestfile digest.txt "oci-archive:$rock" "docker://$image:sha-$COMMIT"
-          printf '%s@%s\n' "$image" "$(cat digest.txt)" >> "$GITHUB_STEP_SUMMARY"
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
+          compression-level: 0
