@@ -139,6 +139,7 @@ class RockContracts(unittest.TestCase):
                 self.assertEqual(project["environment"]["PEBBLE_COPY_ONCE"], "/var/lib/pebble/default")
                 self.assertEqual(project["environment"]["PEBBLE_VERBOSE"], "1")
                 self.assertEqual(project["services"]["tf-runner"]["command"], "/usr/local/bin/start-runner [ ]")
+                self.assertEqual(project["services"]["tf-runner"]["kill-delay"], "1h")
                 packages = project["parts"]["runtime"]["stage-packages"]
                 self.assertTrue(all("_" in package for package in packages))
                 for required in ("base-files_chisel", "bash_bins", "dash_bins", "git_http-support",

@@ -79,7 +79,8 @@ service. `PEBBLE=/tmp/pebble` and `PEBBLE_COPY_ONCE` copy the immutable Pebble l
 to writable `/tmp`. The service runs `scripts/start-runner.sh`, which creates the
 plugin/Juju directories in the mounted home and executes `tf-runner` with those
 arguments. Pebble remains the supervisor; the `.rock` archive is not rewritten
-after packing. Rockcraft warns about binding OCI arguments to an entrypoint service;
+after packing. The service's `kill-delay` is longer than any runner termination
+grace period, so the kubelet, not Pebble's 5s default, bounds a runner's shutdown. Rockcraft warns about binding OCI arguments to an entrypoint service;
 obtain any required Canonical registry approval before moving publication there.
 
 Rockcraft supports `_daemon_` (UID 584792) as its non-root OCI default user. The

@@ -1,7 +1,7 @@
 name: tf-runner-ubuntu-rock
 base: bare
 build-base: ubuntu@24.04
-version: '1.15.5-2'
+version: '1.15.5-3'
 summary: Ubuntu Terraform runner for tofu-controller
 description: |
   Candidate replacement for tf-runner-ubuntu. Includes the Python cloud clients
@@ -28,6 +28,10 @@ services:
     startup: enabled
     on-success: shutdown
     on-failure: shutdown
+    # Longer than any runnerTerminationGracePeriodSeconds, so the pod's grace period
+    # bounds shutdown (as with the Docker images) instead of Pebble's 5s default
+    # cutting short an interrupted terraform run.
+    kill-delay: 1h
 parts:
   runtime:
     plugin: nil
