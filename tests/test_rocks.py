@@ -160,6 +160,16 @@ class RockContracts(unittest.TestCase):
         self.assertIn("refs/heads/main", condition)
         self.assertEqual(workflow["jobs"]["build"]["permissions"], {"contents": "read"})
 
+    def test_managed_build_mounts_shared_repository_inputs(self):
+        workflow = yaml.safe_load((ROOT / ".github/workflows/build-rocks.yaml").read_text())
+        pack = next(step for step in workflow["jobs"]["build"]["steps"] if step.get("id") == "pack")
+        self.assertEqual(pack["env"]["ROCKCRAFT_EXPERIMENTAL_MONOREPO"], "1")
+        self.assertEqual(pack["with"]["path"], "rocks/${{ matrix.project }}")
+        for project in (ROOT / "rocks").glob("*/rockcraft.yaml"):
+            recipe = yaml.safe_load(project.read_text())
+            for name in ("runner", "python-clients"):
+                self.assertEqual(recipe["parts"][name]["source"], "../..")
+
 
 if __name__ == "__main__":
     unittest.main()

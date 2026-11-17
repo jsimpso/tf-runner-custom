@@ -96,11 +96,13 @@ Native LDAP is also configured to use the augmented Ubuntu CA bundle.
 ### Build and test locally
 
 Install Rockcraft using `sudo snap install rockcraft --classic`, with a working
-LXD build provider, then run from each project directory:
+LXD build provider. Rockcraft 1.21+ monorepo support is required to mount the Git
+root (including shared scripts, locks and certificates) in the managed builder;
+without it only the recipe directory is visible. Run from each project directory:
 
 ```bash
 cd rocks/tf-runner-ubuntu
-rockcraft pack
+ROCKCRAFT_EXPERIMENTAL_MONOREPO=1 rockcraft pack
 sudo rockcraft.skopeo --insecure-policy copy \
   oci-archive:tf-runner-ubuntu-rock_1.15.5-2_amd64.rock \
   docker-daemon:tf-runner-ubuntu-rock:test

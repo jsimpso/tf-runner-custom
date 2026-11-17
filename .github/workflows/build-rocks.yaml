@@ -58,6 +58,10 @@ jobs:
       - name: Pack Rock
         id: pack
         uses: canonical/craft-actions/rockcraft/pack@67781aa5b0245eafdc6495760649c54c86059dfa # main (2026-11-07)
+        env:
+          # Rockcraft 1.21+: mount the Git root, not just rocks/<project>, so
+          # override-pull can read the shared scripts, locks and certificates.
+          ROCKCRAFT_EXPERIMENTAL_MONOREPO: '1'
         with:
           path: rocks/${{ matrix.project }}
           channel: latest/stable
